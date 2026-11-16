@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block titulo %}Elegir concesionaria{% endblock %}
+{% block contenido %}
+<section class="tarjeta">
+  <h1>Elegí una concesionaria</h1>
+  {% if tenant_activo %}
+    <p class="aviso">Estás trabajando en <strong>{{ tenant_activo.nombre }}</strong>.</p>
+  {% endif %}
+  {% if membresias %}
+    <form method="post">
+      {% csrf_token %}
+      <ul class="lista">
+        {% for membresia in membresias %}
+          <li>
+            <button type="submit" name="membresia" value="{{ membresia.pk }}"
+                    class="boton boton--secundario"
+                    {% if tenant_activo.pk == membresia.tenant_id %}aria-current="true"{% endif %}>
+              {{ membresia.tenant.nombre }}
+            </button>
+          </li>
+        {% endfor %}
+      </ul>
+    </form>
+  {% else %}
+    <p class="aviso aviso--error">
+      Tu usuario no tiene acceso a ninguna concesionaria activa.
+      Pedile al propietario que te invite o que reactive tu acceso.
+    </p>
+  {% endif %}
+  <form method="post" action="{% url 'accounts:logout' %}">
+    {% csrf_token %}
+    <button type="submit" class="boton boton--enlace">Salir</button>
+  </form>
+</section>
+{% endblock %}

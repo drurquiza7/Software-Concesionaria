@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titulo %}Ingresar{% endblock %}
+{% block contenido %}
+<section class="tarjeta">
+  <h1>Ingresar</h1>
+  {% if error %}<p class="aviso aviso--error" role="alert">{{ error }}</p>{% endif %}
+  <form method="post" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <label for="{{ form.email.id_for_label }}">Email</label>
+    <input type="email" name="email" id="{{ form.email.id_for_label }}"
+           value="{{ form.email.value|default:'' }}" autocomplete="username" required autofocus>
+    <label for="{{ form.password.id_for_label }}">Contraseña</label>
+    <input type="password" name="password" id="{{ form.password.id_for_label }}"
+           autocomplete="current-password" required>
+    <button type="submit" class="boton">Ingresar</button>
+  </form>
+</section>
+{% endblock %}
