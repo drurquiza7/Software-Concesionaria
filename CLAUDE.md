@@ -21,13 +21,15 @@ Este proyecto es un SaaS multi-tenant de gestión de concesionarias automotrices
 | Framework | Django (LTS vigente) |
 | API pública | Django Ninja |
 | Frontend | Templates Django + HTMX + Alpine.js, CSS nativo |
-| Base de datos | PostgreSQL |
+| Base de datos | PostgreSQL (driver `psycopg` 3) |
 | Caché, broker y locks | Redis |
 | Tareas | Celery + Celery Beat |
 | Almacenamiento | Cloudflare R2 vía `django-storages` (API S3) |
 | Imágenes | pyvips |
 | Cliente HTTP | httpx, siempre con timeout explícito |
 | Cifrado | `cryptography` (Fernet / MultiFernet) |
+| Hash de contraseñas | Argon2 vía `argon2-cffi` |
+| Servidor WSGI | gunicorn |
 | Proxy | Caddy |
 | Despliegue | Docker Compose: `caddy`, `web`, `worker`, `beat`, `postgres`, `redis` |
 | Tests | pytest, pytest-django, factory_boy, respx |
@@ -105,6 +107,7 @@ tenants    ─► core
 
 - `objects` es el `TenantManager`: filtra por el tenant activo y **lanza `TenantNoDefinido`** si no hay ninguno. Nunca devuelve datos sin filtrar.
 - `all_tenants` es el manager sin filtro. Solo se permite en: tareas periódicas de sistema, migraciones de datos, comandos de gestión y el admin interno. Cada uso lleva un comentario `# all_tenants: <motivo>`.
+- Única excepción en código de aplicación: `accounts.selectors.membresias_de_usuario()`, que lista las membresías activas del usuario autenticado para el login y el selector de concesionaria, antes de que exista un tenant activo. No se usa en ningún otro flujo.
 - Prohibido en código de aplicación: `_base_manager`, `_default_manager`, SQL crudo (`raw()`, `cursor.execute`) y `.extra()`. Si hace falta SQL crudo, pedí aprobación e incluí el filtro por `tenant_id` como parámetro.
 - Nunca filtres por un `tenant_id` que venga del cliente (URL, formulario, body, header). El tenant sale de la sesión o de la API Key.
 
@@ -119,11 +122,13 @@ El tenant activo se define en exactamente tres lugares:
 | Celery | `with tenant_context(tenant_id):` al inicio de la tarea |
 
 - Toda tarea Celery que toca datos de tenant recibe `tenant_id` como argumento explícito.
+- Única excepción: el comando de gestión `crear_concesionaria`, que da de alta el tenant con su primera sucursal, sus roles predeterminados y su propietario.
 - Cualquier otro código que necesite fijar el tenant está mal diseñado: revisalo.
 
 ### 4.4 Autorización
 
 - Cada vista y endpoint interno declara su permiso con el decorador de `accounts`. Una vista sin permiso declarado ni marca explícita de pública hace fallar la suite.
+- Las marcas son tres: `@requiere_permiso("modulo.accion")`, `@vista_publica` (sin sesión) y `@requiere_sesion` (usuario autenticado que todavía no eligió concesionaria: solo logout y selector).
 - Un objeto de otro tenant o fuera del alcance de sucursal responde `404`, nunca `403`.
 - Los datos que requieren un permiso no se envían al navegador si el usuario no lo tiene. Ocultar con CSS o con `hidden` no es control de acceso.
 - Respetá las reglas de jerarquía y anti-escalada de roles del SRS (RN-09 y RN-10) en el servicio, no en la vista.

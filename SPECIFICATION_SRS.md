@@ -106,7 +106,7 @@ Tenant 1──N ApiKey
 | `activa` | BOOLEAN | Default `true` |
 
 - **RN-02**: todo tenant DEBE tener al menos una sucursal activa. No se puede desactivar la última.
-- **RN-03**: no se puede desactivar una sucursal con vehículos en estado `disponible` o `reservado`.
+- **RN-03**: no se puede desactivar una sucursal con vehículos en estado `disponible` o `reservado`. Como `tenants` no puede importar `inventory`, la regla se aplica con un registro de bloqueadores de desactivación en `tenants` que `inventory` completa.
 
 ### 2.5 Usuario (global, no es `TenantModel`)
 
@@ -189,7 +189,7 @@ Catálogo inicial del MVP:
 |---|---|---|
 | `nombre` | VARCHAR(60) | NOT NULL. UNIQUE (`tenant_id`, `nombre`) |
 | `color` | CHAR(7) | NULL. Hex `#RRGGBB` |
-| `posicion` | INTEGER | NOT NULL. UNIQUE (`tenant_id`, `posicion`). Mayor número = mayor jerarquía |
+| `posicion` | INTEGER | NOT NULL. UNIQUE (`tenant_id`, `posicion`) DEFERRABLE. Mayor número = mayor jerarquía |
 | `es_predeterminado` | BOOLEAN | Default `false`. Roles creados por el sistema en el alta |
 | `permisos` | M2M Permiso | Vía `RolPermiso` |
 
